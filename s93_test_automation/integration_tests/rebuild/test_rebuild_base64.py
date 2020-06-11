@@ -15,7 +15,7 @@ class Test_rebuild_base64(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         log.info(f"Setting up {cls.__name__}")
-        cls.endpoint                    = f"{os.environ['endpoint']}/base64"
+        cls.endpoint                    = f"{os.environ['endpoint']}/base64?code="
         cls.api_key                     = os.environ["api_key"]
 
         cls.bmp_32kb                    = os.path.join(_ROOT, "data", "files", "under_6mb", "bmp", "bmp_32kb.bmp")
@@ -52,13 +52,12 @@ class Test_rebuild_base64(unittest.TestCase):
 
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key,
                 json={
                     "Base64": b64encode(test_file).decode()
                 },
                 headers={
-                    "Content-Type": "application/json",
-                    "x-api-key": self.api_key
+                    "Content-Type": "application/json"
                 }
             )
 
@@ -82,13 +81,12 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "Base64": b64encode(test_file).decode()
             },
             headers={
                 "Content-Type": "application/json",
-                "x-api-key": self.api_key
             }
         )
 
@@ -98,9 +96,9 @@ class Test_rebuild_base64(unittest.TestCase):
             HTTPStatus.OK
         )
 
-        # Response content should be identical to the test file input
+        #Response content should be identical to the test file input
         self.assertEqual(
-            b64decode(response.content),
+            b64decode(response.json().get("Base64")),
             test_file
         )
 
@@ -119,13 +117,12 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "Base64": b64encode(test_file).decode()
             },
             headers={
-                "Content-Type": "application/json",
-                "x-api-key": self.api_key
+                "Content-Type": "application/json"
             }
         )
 
@@ -135,7 +132,7 @@ class Test_rebuild_base64(unittest.TestCase):
             HTTPStatus.REQUEST_ENTITY_TOO_LARGE
         )
 
-    def test_post___bmp_32kb_invalid_api_key___returns_status_code_403(self):
+    def test_post___bmp_32kb_invalid_api_key___returns_status_code_401(self):
         """
         3-Test_File submit using base64 code & less than 6mb with invalid x-api key is unsuccessful
         Steps:
@@ -149,20 +146,19 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+"",
             json={
                 "Base64": b64encode(test_file).decode()
             },
             headers={
                 "Content-Type": "application/json",
-                "x-api-key": ""
             }
         )
 
-        # Status code should be 403, forbidden
+        # Status code should be 401, unauthorized
         self.assertEqual(
             response.status_code,
-            HTTPStatus.FORBIDDEN
+            HTTPStatus.UNAUTHORIZED
         )
 
     def test_post___doc_embedded_images_12kb_content_management_policy_allow___returns_status_code_200_identical_file(self):
@@ -183,7 +179,7 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "Base64": b64encode(test_file).decode(),
                 "ContentManagementFlags": {
@@ -229,8 +225,7 @@ class Test_rebuild_base64(unittest.TestCase):
                 }
             },
             headers={
-                "Content-Type": "application/json",
-                "x-api-key": self.api_key
+                "Content-Type": "application/json"
             }
         )
 
@@ -242,7 +237,7 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Response content should be identical to the test file input.
         # This might not be the case for other files as Glasswall may reorganise them structurally.
-        response_file_bytes = b64decode(response.content)
+        response_file_bytes = b64decode(response.json().get("Base64"))
         self.assertEqual(
             response_file_bytes,
             test_file
@@ -266,7 +261,7 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "Base64": b64encode(test_file).decode(),
                 "ContentManagementFlags": {
@@ -283,8 +278,7 @@ class Test_rebuild_base64(unittest.TestCase):
                 }
             },
             headers={
-                "Content-Type": "application/json",
-                "x-api-key": self.api_key
+                "Content-Type": "application/json"
             }
         )
 
@@ -295,7 +289,8 @@ class Test_rebuild_base64(unittest.TestCase):
         )
 
         # Response content as file bytes should match known md5 of expected bytes.
-        response_file_bytes = b64decode(response.content)
+        #B64content = json.loads(response.content)
+        response_file_bytes = b64decode(response.json().get("Base64"))
         self.assertEqual(
             get_md5(response_file_bytes),
             "665f3d263d7fe25b7491cbeec657abb0"
@@ -319,7 +314,7 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "Base64": b64encode(test_file).decode(),
                 "ContentManagementFlags": {
@@ -329,8 +324,7 @@ class Test_rebuild_base64(unittest.TestCase):
                 }
             },
             headers={
-                "Content-Type": "application/json",
-                "x-api-key": self.api_key
+                "Content-Type": "application/json"
             }
         )
 
@@ -343,11 +337,8 @@ class Test_rebuild_base64(unittest.TestCase):
         # Content-Type should be application/json
         self.assertTrue("application/json" in response.headers.get("Content-Type"))
 
-        # JSON should have an errorMessage key
-        self.assertTrue("errorMessage" in response.json().keys())
-
-        # JSON should have isDisallowed key with value True
-        self.assertTrue(response.json().get("isDisallowed"))
+        # JSON should have isDisallowed key with value True (isDisallowed does not exist currently 11/06/2020)
+        self.assertTrue("[FAILURE_LOG_DIRECTORY_PROCESS_2714634667] Image detected and DISALLOWED" in response.json().get("error"))
 
     def test_post___txt_1kb___returns_status_code_422(self):
         """
@@ -363,13 +354,12 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "Base64": b64encode(test_file).decode()
             },
             headers={
-                "Content-Type": "application/json",
-                "x-api-key": self.api_key
+                "Content-Type": "application/json"
             }
         )
 
@@ -397,13 +387,12 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "Base64": b64encode(test_file).decode()
             },
             headers={
-                "Content-Type": "application/json",
-                "x-api-key": self.api_key
+                "Content-Type": "application/json"
             }
         )
 
@@ -414,7 +403,7 @@ class Test_rebuild_base64(unittest.TestCase):
         )
 
         # Response content as file bytes should match known md5 of expected bytes.
-        response_file_bytes = b64decode(response.content)
+        response_file_bytes = b64decode(response.json().get("Base64"))
         self.assertEqual(
             get_md5(response_file_bytes),
             "4b6ef99d2932fd735a4eed1c1ca236ee"
@@ -438,13 +427,12 @@ class Test_rebuild_base64(unittest.TestCase):
 
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "Base64": b64encode(test_file).decode()
             },
             headers={
-                "Content-Type": "application/json",
-                "x-api-key": self.api_key
+                "Content-Type": "application/json"
             }
         )
 
