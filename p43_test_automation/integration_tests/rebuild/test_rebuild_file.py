@@ -7,8 +7,8 @@ import logging
 log = logging.getLogger("glasswall")
 import os
 import requests
-from s93_test_automation import _ROOT
-from s93_test_automation.common import get_file_bytes, list_file_paths, get_md5
+from p43_test_automation import _ROOT
+from p43_test_automation.common import get_file_bytes, list_file_paths, get_md5
 import unittest
 
 

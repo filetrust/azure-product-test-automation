@@ -4,7 +4,7 @@ import argparse
 import logging
 log = logging.getLogger("glasswall")
 import os
-from s93_test_automation import _ROOT, run_tests
+from p43_test_automation import _ROOT, run_tests
 import unittest
 
 
