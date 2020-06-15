@@ -6,8 +6,8 @@ import logging
 log = logging.getLogger("glasswall")
 import os
 import requests
-from s93_test_automation import _ROOT
-from s93_test_automation.common import list_file_paths, get_md5, get_presigned_urls
+from p43_test_automation import _ROOT
+from p43_test_automation.common import list_file_paths, get_md5, get_presigned_urls
 import unittest
 
 
@@ -15,8 +15,9 @@ class Test_rebuild_url(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         log.info(f"Setting up {cls.__name__}")
-        cls.endpoint                        = f"{os.environ['endpoint']}"
+        cls.endpoint                        = f"{os.environ['endpoint']}url?code="
         cls.api_key                         = os.environ["api_key"]
+        cls.url_api_key                     =os.environ["url_api_key"]
 
         cls.endpoint_upload                 = "https://l76geea2l9.execute-api.eu-west-2.amazonaws.com/development/generate-post-presigned-url"
         cls.endpoint_download               = "https://l76geea2l9.execute-api.eu-west-2.amazonaws.com/development/generate-presigned-url"
@@ -24,24 +25,24 @@ class Test_rebuild_url(unittest.TestCase):
         log.info("Generating presigned urls...")
 
         cls.bmp_32kb                        = os.path.join(_ROOT, "data", "files", "under_6mb", "bmp", "bmp_32kb.bmp")
-        cls.bmp_32kb_urls                   = get_presigned_urls(cls.bmp_32kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.bmp_32kb_urls                   = get_presigned_urls(cls.bmp_32kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
         cls.bmp_under_6mb                   = os.path.join(_ROOT, "data", "files", "under_6mb", "bmp", "bmp_5.93mb.bmp")
-        cls.bmp_under_6mb_urls              = get_presigned_urls(cls.bmp_under_6mb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.bmp_under_6mb_urls              = get_presigned_urls(cls.bmp_under_6mb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
         cls.bmp_over_6mb                    = os.path.join(_ROOT, "data", "files", "over_6mb", "bmp", "bmp_6.12mb.bmp")
-        cls.bmp_over_6mb_urls               = get_presigned_urls(cls.bmp_over_6mb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.bmp_over_6mb_urls               = get_presigned_urls(cls.bmp_over_6mb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
         cls.txt_1kb                         = os.path.join(_ROOT, "data", "files", "under_6mb", "txt", "txt_1kb.txt")
-        cls.txt_1kb_urls                    = get_presigned_urls(cls.txt_1kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.txt_1kb_urls                    = get_presigned_urls(cls.txt_1kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
         cls.doc_embedded_images_12kb        = os.path.join(_ROOT, "data", "files", "under_6mb", "doc", "doc_embedded_images_12kb.docx")
-        cls.doc_embedded_images_12kb_urls   = get_presigned_urls(cls.doc_embedded_images_12kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.doc_embedded_images_12kb_urls   = get_presigned_urls(cls.doc_embedded_images_12kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
         cls.xls_malware_macro_48kb          = os.path.join(_ROOT, "data", "files", "under_6mb", "harmless_macro", "xls", "CalcTest.xls")
-        cls.xls_malware_macro_48kb_urls     = get_presigned_urls(cls.xls_malware_macro_48kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.xls_malware_macro_48kb_urls     = get_presigned_urls(cls.xls_malware_macro_48kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
         # # waiting for update to the presigned url lambda to allow files with no extension
         # cls.jpeg_corrupt_10kb               = os.path.join(_ROOT, "data", "files", "under_6mb", "corrupt", "Corrupted_jpeg_png_mag_no")
-        # cls.jpeg_corrupt_10kb_urls          = get_presigned_urls(cls.jpeg_corrupt_10kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        # cls.jpeg_corrupt_10kb_urls          = get_presigned_urls(cls.jpeg_corrupt_10kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
     @classmethod
     def tearDownClass(cls):
@@ -63,13 +64,10 @@ class Test_rebuild_url(unittest.TestCase):
         """
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "InputGetUrl": self.bmp_32kb_urls.get("InputGetUrl"),
                 "OutputPutUrl": self.bmp_32kb_urls.get("OutputPutUrl"),
-            },
-            headers={
-                "x-api-key": self.api_key,
             }
         )
 
@@ -85,13 +83,13 @@ class Test_rebuild_url(unittest.TestCase):
             get_md5(self.bmp_32kb)
         )
 
-    def test_post___bmp_32kb_no_api_key___returns_status_code_403(self):
+    def test_post___bmp_32kb_no_api_key___returns_status_code_401(self):
         """
         6a-Test_File submit using pre-signed url with no x-api key is unsuccessful
         Steps:
             Post a file payload request with file url: '[API GATEWAY URL]/api/Rebuild/sas' with invalid x-api key
         Expected:
-            The response message 'forbidden' is returned with error code '403'
+            The response message 'Unauthorized' is returned with error code '401'
         """
         # Send post request
         response = requests.post(
@@ -102,36 +100,33 @@ class Test_rebuild_url(unittest.TestCase):
             }
         )
 
-        # Status code should be 403, forbidden
+        # Status code should be 401, forbidden
         self.assertEqual(
             response.status_code,
-            HTTPStatus.FORBIDDEN
+            HTTPStatus.UNAUTHORIZED
         )
 
-    def test_post___bmp_32kb_invalid_api_key___returns_status_code_403(self):
+    def test_post___bmp_32kb_invalid_api_key___returns_status_code_401(self):
         """
         6b-Test_File submit using pre-signed url with invalid x-api key is unsuccessful
         Steps:
                 Post a file payload request with file url: '[API GATEWAY URL]/api/Rebuild/sas' with invalid x-api key
         Expected:
-            The response message 'forbidden' is returned with error code '403'
+            The response message 'unauthorized' is returned with error code '401'
         """
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key + "abcdef",
             json={
                 "InputGetUrl": self.bmp_32kb_urls.get("InputGetUrl"),
                 "OutputPutUrl": self.bmp_32kb_urls.get("OutputPutUrl"),
-            },
-            headers={
-                "x-api-key": self.api_key + "abcdef",
             }
         )
 
-        # Status code should be 403, forbidden
+        # Status code should be 401, forbidden
         self.assertEqual(
             response.status_code,
-            HTTPStatus.FORBIDDEN
+            HTTPStatus.UNAUTHORIZED
         )
 
     def test_post___doc_embedded_images_12kb_content_management_policy_allow___returns_status_code_200_identical_file(self):
@@ -148,7 +143,7 @@ class Test_rebuild_url(unittest.TestCase):
         """
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "InputGetUrl": self.doc_embedded_images_12kb_urls.get("InputGetUrl"),
                 "OutputPutUrl": self.doc_embedded_images_12kb_urls.get("OutputPutUrl"),
@@ -194,9 +189,6 @@ class Test_rebuild_url(unittest.TestCase):
                     }
                 }
             },
-            headers={
-                "x-api-key": self.api_key,
-            }
         )
 
         # Status code should be 200, ok
@@ -225,7 +217,7 @@ class Test_rebuild_url(unittest.TestCase):
         """
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "InputGetUrl": self.doc_embedded_images_12kb_urls.get("InputGetUrl"),
                 "OutputPutUrl": self.doc_embedded_images_12kb_urls.get("OutputPutUrl"),
@@ -242,9 +234,6 @@ class Test_rebuild_url(unittest.TestCase):
                     },
                 },
             },
-            headers={
-                "x-api-key": self.api_key,
-            }
         )
 
         # Status code should be 200, ok
@@ -279,7 +268,7 @@ class Test_rebuild_url(unittest.TestCase):
         """
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "InputGetUrl": self.doc_embedded_images_12kb_urls.get("InputGetUrl"),
                 "OutputPutUrl": self.doc_embedded_images_12kb_urls.get("OutputPutUrl"),
@@ -289,9 +278,6 @@ class Test_rebuild_url(unittest.TestCase):
                     },
                 },
             },
-            headers={
-                "x-api-key": self.api_key,
-            }
         )
 
         # Status code should be 200, ok
@@ -300,11 +286,8 @@ class Test_rebuild_url(unittest.TestCase):
             HTTPStatus.OK
         )
 
-        # JSON should have an errorMessage key
-        self.assertTrue("errorMessage" in response.json().keys())
-
-        # JSON should have isDisallowed key with value True
-        self.assertTrue(response.json().get("isDisallowed"))
+        # JSON should have isDisallowed key with value True (isDisallowed does not exist currently 11/06/2020)
+        self.assertTrue("[FAILURE_LOG_DIRECTORY_PROCESS_2714634667] Image detected and DISALLOWED" in response.json().get("error"))
 
     def test_post___txt_1kb___returns_status_code_422(self):
         """
@@ -316,14 +299,11 @@ class Test_rebuild_url(unittest.TestCase):
         """
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "InputGetUrl": self.txt_1kb_urls.get("InputGetUrl"),
                 "OutputPutUrl": self.txt_1kb_urls.get("OutputPutUrl"),
             },
-            headers={
-                "x-api-key": self.api_key,
-            }
         )
 
         # Status code should be 422, Unprocessable Entity
@@ -346,14 +326,11 @@ class Test_rebuild_url(unittest.TestCase):
         """
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "InputGetUrl": self.xls_malware_macro_48kb_urls.get("InputGetUrl"),
                 "OutputPutUrl": self.xls_malware_macro_48kb_urls.get("OutputPutUrl"),
             },
-            headers={
-                "x-api-key": self.api_key
-            }
         )
 
         # Status code should be 200, ok
@@ -389,14 +366,11 @@ class Test_rebuild_url(unittest.TestCase):
         """
         # Send post request
         response = requests.post(
-            url=self.endpoint,
+            url=self.endpoint+self.api_key,
             json={
                 "InputGetUrl": self.jpeg_corrupt_10kb_urls.get("InputGetUrl"),
                 "OutputPutUrl": self.jpeg_corrupt_10kb_urls.get("OutputPutUrl"),
             },
-            headers={
-                "x-api-key": self.api_key,
-            }
         )
 
         # Status code should be 422, Unprocessable Entity

@@ -7,8 +7,8 @@ import logging
 log = logging.getLogger("glasswall")
 import os
 import requests
-from s93_test_automation import _ROOT
-from s93_test_automation.common import get_file_bytes, list_file_paths, get_md5
+from p43_test_automation import _ROOT
+from p43_test_automation.common import get_file_bytes, list_file_paths, get_md5
 import unittest
 
 
@@ -16,7 +16,7 @@ class Test_rebuild_file(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         log.info(f"Setting up {cls.__name__}")
-        cls.endpoint                    = f"{os.environ['endpoint']}/file"
+        cls.endpoint                    = f"{os.environ['endpoint']}/file?code="
         cls.api_key                     = os.environ["api_key"]
 
         cls.bmp_32kb                    = os.path.join(_ROOT, "data", "files", "under_6mb", "bmp", "bmp_32kb.bmp")
@@ -53,11 +53,10 @@ class Test_rebuild_file(unittest.TestCase):
             with open(file_path, "rb") as test_file:
                 # Send post request
                 response = requests.post(
-                    url=self.endpoint,
+                    url=self.endpoint+self.api_key,
                     files=[("file", test_file)],
                     headers={
                         "accept": "application/octet-stream",
-                        "x-api-key": self.api_key,
                     },
                 )
 
@@ -79,11 +78,10 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.bmp_32kb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key,
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key,
                 }
             )
 
@@ -112,11 +110,10 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.bmp_over_6mb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key,
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key,
                 }
             )
 
@@ -126,7 +123,7 @@ class Test_rebuild_file(unittest.TestCase):
             HTTPStatus.REQUEST_ENTITY_TOO_LARGE
         )
 
-    def test_post___bmp_32kb_invalid_api_key___returns_status_code_403(self):
+    def test_post___bmp_32kb_invalid_api_key___returns_status_code_401(self):
         """
         3-Test_File submit using file endpoint & less than 6mb with invalid x-api key is unsuccessful
         Steps:
@@ -138,18 +135,17 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.bmp_32kb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key + "abcdef",
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key + "abcdef",
                 }
             )
 
-        # Status code should be 403, forbidden
+        # Status code should be 401, unauthorised
         self.assertEqual(
             response.status_code,
-            HTTPStatus.FORBIDDEN
+            HTTPStatus.UNAUTHORIZED
         )
 
     def test_post___doc_embedded_images_12kb_content_management_policy_allow___returns_status_code_200_identical_file(self):
@@ -168,38 +164,9 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.doc_embedded_images_12kb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key,
                 data={
-                    "contentManagementFlagJson": json.dumps({
-                        "PdfContentManagement": {
-                            "Metadata": 0,
-                            "InternalHyperlinks": 0,
-                            "ExternalHyperlinks": 0,
-                            "EmbeddedFiles": 0,
-                            "EmbeddedImages": 0,
-                            "Javascript": 0,
-                            "Acroform": 0,
-                            "ActionsAll": 0
-                        },
-                        "ExcelContentManagement": {
-                            "Metadata": 0,
-                            "InternalHyperlinks": 0,
-                            "ExternalHyperlinks": 0,
-                            "EmbeddedFiles": 0,
-                            "EmbeddedImages": 0,
-                            "DynamicDataExchange": 0,
-                            "Macros": 0,
-                            "ReviewComments": 0
-                        },
-                        "PowerPointContentManagement": {
-                            "Metadata": 0,
-                            "InternalHyperlinks": 0,
-                            "ExternalHyperlinks": 0,
-                            "EmbeddedFiles": 0,
-                            "EmbeddedImages": 0,
-                            "Macros": 0,
-                            "ReviewComments": 0
-                        },
+                    "ContentManagementFlags": json.dumps({
                         "WordContentManagement": {
                             "Metadata": 0,
                             "InternalHyperlinks": 0,
@@ -215,7 +182,6 @@ class Test_rebuild_file(unittest.TestCase):
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key,
                 },
             )
 
@@ -248,9 +214,9 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.doc_embedded_images_12kb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key,
                 data={
-                    "contentManagementFlagJson": json.dumps({
+                    "contentManagementFlags": json.dumps({
                         "WordContentManagement": {
                             "Metadata": 1,
                             "InternalHyperlinks": 1,
@@ -266,7 +232,6 @@ class Test_rebuild_file(unittest.TestCase):
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key,
                 },
             )
 
@@ -298,9 +263,9 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.doc_embedded_images_12kb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key,
                 data={
-                    "contentManagementFlagJson": json.dumps({
+                    "contentManagementFlags": json.dumps({
                         "WordContentManagement": {
                             "EmbeddedImages": 2,
                         }
@@ -309,7 +274,6 @@ class Test_rebuild_file(unittest.TestCase):
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key,
                 },
             )
 
@@ -322,11 +286,8 @@ class Test_rebuild_file(unittest.TestCase):
         # Content-Type should be application/json
         self.assertTrue("application/json" in response.headers.get("Content-Type"))
 
-        # JSON should have an errorMessage key
-        self.assertTrue("errorMessage" in response.json().keys())
-
-        # JSON should have isDisallowed key with value True
-        self.assertTrue(response.json().get("isDisallowed"))
+        # JSON should have isDisallowed key with value True (isDisallowed does not exist currently 11/06/2020)
+        self.assertTrue("[FAILURE_LOG_DIRECTORY_PROCESS_2714634667] Image detected and DISALLOWED" in response.json().get("error"))
 
     def test_post___txt_1kb___returns_status_code_422(self):
         """
@@ -340,11 +301,10 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.txt_1kb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key,
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key,
                 },
             )
 
@@ -370,18 +330,10 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.xls_malware_macro_48kb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
-                data={
-                    "contentManagementFlagJson": json.dumps({
-                        "WordContentManagement": {
-                            "EmbeddedImages": 2,
-                        }
-                    })
-                },
+                url=self.endpoint+self.api_key,
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key,
                 },
             )
 
@@ -413,11 +365,10 @@ class Test_rebuild_file(unittest.TestCase):
         with open(self.jpeg_corrupt_10kb, "rb") as test_file:
             # Send post request
             response = requests.post(
-                url=self.endpoint,
+                url=self.endpoint+self.api_key,
                 files=[("file", test_file)],
                 headers={
                     "accept": "application/octet-stream",
-                    "x-api-key": self.api_key,
                 },
             )
 
