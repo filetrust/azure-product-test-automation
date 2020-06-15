@@ -17,6 +17,7 @@ class Test_rebuild_url(unittest.TestCase):
         log.info(f"Setting up {cls.__name__}")
         cls.endpoint                        = f"{os.environ['endpoint']}url?code="
         cls.api_key                         = os.environ["api_key"]
+        cls.url_api_key                     =os.environ["url_api_key"]
 
         cls.endpoint_upload                 = "https://l76geea2l9.execute-api.eu-west-2.amazonaws.com/development/generate-post-presigned-url"
         cls.endpoint_download               = "https://l76geea2l9.execute-api.eu-west-2.amazonaws.com/development/generate-presigned-url"
@@ -24,24 +25,24 @@ class Test_rebuild_url(unittest.TestCase):
         log.info("Generating presigned urls...")
 
         cls.bmp_32kb                        = os.path.join(_ROOT, "data", "files", "under_6mb", "bmp", "bmp_32kb.bmp")
-        cls.bmp_32kb_urls                   = get_presigned_urls(cls.bmp_32kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.bmp_32kb_urls                   = get_presigned_urls(cls.bmp_32kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
         cls.bmp_under_6mb                   = os.path.join(_ROOT, "data", "files", "under_6mb", "bmp", "bmp_5.93mb.bmp")
-        cls.bmp_under_6mb_urls              = get_presigned_urls(cls.bmp_under_6mb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.bmp_under_6mb_urls              = get_presigned_urls(cls.bmp_under_6mb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
         cls.bmp_over_6mb                    = os.path.join(_ROOT, "data", "files", "over_6mb", "bmp", "bmp_6.12mb.bmp")
-        cls.bmp_over_6mb_urls               = get_presigned_urls(cls.bmp_over_6mb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.bmp_over_6mb_urls               = get_presigned_urls(cls.bmp_over_6mb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
         cls.txt_1kb                         = os.path.join(_ROOT, "data", "files", "under_6mb", "txt", "txt_1kb.txt")
-        cls.txt_1kb_urls                    = get_presigned_urls(cls.txt_1kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.txt_1kb_urls                    = get_presigned_urls(cls.txt_1kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
         cls.doc_embedded_images_12kb        = os.path.join(_ROOT, "data", "files", "under_6mb", "doc", "doc_embedded_images_12kb.docx")
-        cls.doc_embedded_images_12kb_urls   = get_presigned_urls(cls.doc_embedded_images_12kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.doc_embedded_images_12kb_urls   = get_presigned_urls(cls.doc_embedded_images_12kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
         cls.xls_malware_macro_48kb          = os.path.join(_ROOT, "data", "files", "under_6mb", "harmless_macro", "xls", "CalcTest.xls")
-        cls.xls_malware_macro_48kb_urls     = get_presigned_urls(cls.xls_malware_macro_48kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        cls.xls_malware_macro_48kb_urls     = get_presigned_urls(cls.xls_malware_macro_48kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
         # # waiting for update to the presigned url lambda to allow files with no extension
         # cls.jpeg_corrupt_10kb               = os.path.join(_ROOT, "data", "files", "under_6mb", "corrupt", "Corrupted_jpeg_png_mag_no")
-        # cls.jpeg_corrupt_10kb_urls          = get_presigned_urls(cls.jpeg_corrupt_10kb, cls.endpoint_upload, cls.endpoint_download, cls.api_key)
+        # cls.jpeg_corrupt_10kb_urls          = get_presigned_urls(cls.jpeg_corrupt_10kb, cls.endpoint_upload, cls.endpoint_download, cls.url_api_key)
 
     @classmethod
     def tearDownClass(cls):

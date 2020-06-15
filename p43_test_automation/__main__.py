@@ -49,6 +49,13 @@ def get_command_line_args():
         nargs="?",
         choices=("NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
     )
+    parser.add_argument(
+        "--url_api_key", "-u",
+        dest="url_api_key",
+        help="api key to access the s3 bucket presigned urls.",
+        type=str,
+        required=True
+    )
 
     return parser.parse_args()
 
@@ -57,7 +64,7 @@ def set_environment_variables(args):
     os.environ["endpoint"]      = args.endpoint
     os.environ["api_key"]       = args.api_key
     os.environ["test_files"]    = args.test_files
-
+    os.environ["url_api_key"]   = args.url_api_key
 
 def set_logging_level(level):
     logging.basicConfig(level=getattr(logging, level))
